@@ -1,0 +1,704 @@
+import zipfile
+import os
+
+html_content = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESG Insights | S&P 500 Analytics</title>
+    <!-- Tailwind CSS for rapid, modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Plotly.js for advanced 2D and 3D interactive charts -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <!-- Google Fonts for professional typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            primary: '#86BC25',   // Original Green
+                            secondary: '#0076A8', // Original Blue
+                            black: '#000000',
+                            darkbg: '#0a0a0a',
+                            panel: '#151515',
+                            gray: '#97999B'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Open Sans', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            /* Subtle tech background pattern */
+            background-image: radial-gradient(circle at center, #111 0%, #000 100%);
+        }
+        .glass-panel {
+            background: rgba(21, 21, 21, 0.8);
+            border: 1px solid rgba(134, 188, 37, 0.3);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            border-radius: 12px;
+        }
+        .glow-text {
+            text-shadow: 0 0 10px rgba(134, 188, 37, 0.5);
+        }
+        /* Custom scrollbar for tech feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #000; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #0076A8; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #86BC25; 
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-brand-primary selection:text-white">
+
+    <!-- Header Navigation -->
+    <nav class="w-full border-b border-brand-primary/30 bg-black/90 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <div class="flex items-center gap-3">
+                    <div class="text-brand-primary font-bold text-3xl tracking-tighter">ESG Insights.</div>
+                    <div class="h-6 w-px bg-brand-gray mx-2"></div>
+                    <div class="text-gray-300 font-light text-lg tracking-wide">Data Excellence Center</div>
+                </div>
+                <div class="hidden md:block">
+                    <span class="text-sm font-semibold text-brand-secondary uppercase tracking-widest border border-brand-secondary px-3 py-1 rounded-full">S&P 500 Analytics</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-10">
+        
+        <!-- Executive Summary -->
+        <section class="glass-panel p-8">
+            <h1 class="text-3xl font-bold mb-4 text-white glow-text">Industry ESG Landscape & Performance Matrix</h1>
+            <p class="text-gray-400 text-lg leading-relaxed mb-6">
+                Welcome to the Interactive ESG Analytics Dashboard. As environmental, social, and governance factors become critical to corporate valuation, this tool provides a macro-level evaluation of the S&P 500 components. <br/><br/>
+                Explore the cross-sectional distribution of ESG scores across Global Industry Classification Standard (GICS) Sectors. Hover over data points to uncover statistical deep dives, including mean performance and variance, guiding data-driven sustainability strategies.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 border-t border-gray-800 pt-6">
+                <div class="flex flex-col">
+                    <span class="text-brand-gray text-sm uppercase font-semibold">Dataset</span>
+                    <span class="text-xl text-white font-light">S&P 500 Components</span>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-brand-gray text-sm uppercase font-semibold">Analyzed Sectors</span>
+                    <span class="text-xl text-brand-primary font-bold">11 Key Industries</span>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-brand-gray text-sm uppercase font-semibold">Data Period</span>
+                    <span class="text-xl text-white font-light">2023 - 2024</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Team Introduction Section -->
+        <section class="glass-panel p-8 md:p-10 mt-8 flex flex-col lg:flex-row gap-10 items-center bg-gradient-to-br from-[#151515] to-[#0a0a0a]">
+            <!-- Left Side: Text Intro -->
+            <div class="lg:w-1/3 w-full">
+                <div class="inline-block bg-black/60 backdrop-blur px-3 py-1 rounded text-sm font-bold text-brand-secondary border border-brand-secondary/30 mb-4">
+                    TEAM INTRODUCTION
+                </div>
+                <h3 class="text-3xl md:text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-brand-secondary via-blue-400 to-brand-primary">
+                    Meet the Analysts
+                </h3>
+                <p class="text-gray-400 text-lg leading-relaxed">
+                    The data science and ESG advisory minds behind the analytics.
+                </p>
+            </div>
+            
+            <!-- Right Side: Team Grid -->
+            <div class="lg:w-2/3 w-full grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div class="flex items-center gap-5 bg-black/40 p-4 rounded-xl border border-gray-800 hover:border-brand-primary/50 transition-all hover:shadow-[0_4px_20px_rgba(134,188,37,0.15)] group cursor-default">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-brand-secondary to-brand-primary flex items-center justify-center text-white font-bold text-xl shadow-[0_0_10px_rgba(134,188,37,0.3)] group-hover:scale-110 transition-transform">J</div>
+                    <span class="text-gray-200 text-xl font-semibold tracking-wide group-hover:text-white transition-colors">Jinyu Zhang</span>
+                </div>
+                <div class="flex items-center gap-5 bg-black/40 p-4 rounded-xl border border-gray-800 hover:border-brand-primary/50 transition-all hover:shadow-[0_4px_20px_rgba(134,188,37,0.15)] group cursor-default">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-brand-secondary to-brand-primary flex items-center justify-center text-white font-bold text-xl shadow-[0_0_10px_rgba(134,188,37,0.3)] group-hover:scale-110 transition-transform">J</div>
+                    <span class="text-gray-200 text-xl font-semibold tracking-wide group-hover:text-white transition-colors">Junyi Song</span>
+                </div>
+                <div class="flex items-center gap-5 bg-black/40 p-4 rounded-xl border border-gray-800 hover:border-brand-primary/50 transition-all hover:shadow-[0_4px_20px_rgba(134,188,37,0.15)] group cursor-default">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-brand-secondary to-brand-primary flex items-center justify-center text-white font-bold text-xl shadow-[0_0_10px_rgba(134,188,37,0.3)] group-hover:scale-110 transition-transform">X</div>
+                    <span class="text-gray-200 text-xl font-semibold tracking-wide group-hover:text-white transition-colors">Xiaqi Zhu</span>
+                </div>
+                <div class="flex items-center gap-5 bg-black/40 p-4 rounded-xl border border-gray-800 hover:border-brand-primary/50 transition-all hover:shadow-[0_4px_20px_rgba(134,188,37,0.15)] group cursor-default">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-brand-secondary to-brand-primary flex items-center justify-center text-white font-bold text-xl shadow-[0_0_10px_rgba(134,188,37,0.3)] group-hover:scale-110 transition-transform">Y</div>
+                    <span class="text-gray-200 text-xl font-semibold tracking-wide group-hover:text-white transition-colors">Yushi Fu</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dynamic Thematic Section Header -->
+        <div class="mt-14 mb-4 border-l-4 border-brand-primary pl-6">
+            <h2 class="text-4xl font-bold text-white tracking-wide">Good Students, Bad Students, and the Uneven Achievers</h2>
+            <p class="text-gray-400 text-lg mt-3 max-w-4xl">
+                By breaking down and visualizing data across multiple dimensions, we uncover the underlying ESG patterns of different industries. We will guide you to identify the "Good Students" who demonstrate balanced sustainability performance, as well as the "Uneven Achievers" who show significant disparities across environmental, social, or governance dimensions.
+            </p>
+        </div>
+
+        <!-- Chart 1: 1D Scatter Bubble -->
+        <section class="glass-panel p-8 relative">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h2 class="text-2xl font-semibold mb-2 text-brand-primary">Total ESG Risk Score Distribution by Industry</h2>
+                    <p class="text-sm text-gray-400">
+                        A one-dimensional categorical scatter plot. The X-axis represents the average Total ESG Score. Bubble size corresponds to the density of companies.
+                    </p>
+                </div>
+                <button id="btn-variance" onclick="toggleVariance()" class="bg-brand-panel border border-gray-500 text-gray-300 px-5 py-2 rounded-lg hover:border-white hover:text-white transition-all shadow-lg hover:shadow-gray-500/50 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    Toggle Variance Points
+                </button>
+            </div>
+            <!-- Plotly Container -->
+            <div id="chart-1d" class="w-full h-[500px]"></div>
+        </section>
+
+        <!-- Chart 2: 3D Scatter Heatmap -->
+        <section class="glass-panel p-8 relative">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h2 class="text-2xl font-semibold mb-2 text-brand-secondary">3D E.S.G. Factor Heatmap Matrix</h2>
+                    <p class="text-sm text-gray-400">
+                        A spatial representation of Environmental (X), Social (Y), and Governance (Z) sub-scores. Color intensity acts as a heatmap for the Total ESG Score.
+                    </p>
+                </div>
+                <button id="btn-uneven" onclick="toggleUneven()" class="bg-brand-panel border border-brand-secondary text-brand-secondary px-5 py-2 rounded-lg hover:bg-brand-secondary hover:text-white transition-all shadow-lg hover:shadow-brand-secondary/50 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    <span>Toggle "Uneven Achievers"</span>
+                </button>
+            </div>
+            <!-- Plotly Container -->
+            <div id="chart-3d" class="w-full h-[650px]"></div>
+        </section>
+
+        <!-- Dynamic Thematic Section Header 2 -->
+        <div class="mt-20 mb-4 border-l-4 border-brand-primary pl-6">
+            <h2 class="text-3xl font-bold text-white tracking-wide">Deep Dive: Analyzing the "Good Students"</h2>
+            <p class="text-gray-400 text-lg mt-3 max-w-4xl">
+                Who are the true drivers of ESG momentum? Let's unpack the high-variance sectors to separate the genuine sustainability innovators from the legacy laggards.
+            </p>
+        </div>
+
+        <!-- Finding 1 Section -->
+        <section class="glass-panel p-0 overflow-hidden flex flex-col md:flex-row">
+            <div class="md:w-5/12 h-64 md:h-auto relative">
+                <!-- High quality stock image of an industrial plant -->
+                <img src="https://images.unsplash.com/photo-1611273426858-450d8e3c9fce?auto=format&fit=crop&q=80&w=800" alt="Industrial Plant" class="object-cover w-full h-full opacity-70 hover:opacity-100 transition-opacity duration-500" />
+                <div class="absolute inset-0 bg-gradient-to-r from-transparent to-[#151515]"></div>
+                <div class="absolute top-4 left-4 bg-black/60 backdrop-blur px-3 py-1 rounded text-sm font-bold text-brand-primary border border-brand-primary/30">
+                    KEY FINDING 01
+                </div>
+            </div>
+            <div class="md:w-7/12 p-8 md:p-12 flex flex-col justify-center">
+                <h3 class="text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-brand-primary via-brand-secondary to-blue-400">
+                    The "Good Student" Paradox: Heavy Emitters Leading the Charge
+                </h3>
+                <p class="text-gray-300 leading-relaxed text-lg">
+                    Our data reveals a counterintuitive trend: the most prominent "Good Students" in ESG momentum are often traditional heavy polluters, such as the <b>Energy</b> and <b>Materials</b> sectors. Because modern ESG frameworks heavily measure <i>impact</i> and transition velocity, these legacy industries can easily secure substantial ESG credits through large-scale decarbonization initiatives.
+                    <br><br>
+                    However, this dynamic also creates the <b>highest intra-industry variance</b>. The gap between a company actively transitioning to renewables and one clinging to traditional extraction is massive, making these sectors the most volatile—yet rewarding—for ESG-focused analysis.
+                </p>
+            </div>
+        </section>
+
+        <!-- Interactive Performer Explorer -->
+        <section class="glass-panel p-8 mt-6">
+            <h3 class="text-2xl font-semibold mb-6 text-white">Intra-Industry Leaders & Laggards Matrix</h3>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                <!-- Column 1: Industry Selection -->
+                <div class="col-span-1 flex flex-col gap-3 border-r border-gray-800 pr-4">
+                    <p class="text-sm text-brand-gray uppercase tracking-wider mb-2 font-semibold">Select Sector</p>
+                    <button onclick="selectIndustry('Energy')" id="tab-Energy" class="industry-tab w-full text-left px-5 py-4 rounded-lg bg-brand-primary/20 border border-brand-primary text-white font-semibold transition-all">
+                        ⚡ Energy
+                    </button>
+                    <button onclick="selectIndustry('Materials')" id="tab-Materials" class="industry-tab w-full text-left px-5 py-4 rounded-lg bg-transparent border border-gray-700 text-gray-400 hover:border-gray-400 hover:text-white transition-all">
+                        🧱 Materials
+                    </button>
+                    <button onclick="selectIndustry('Utilities')" id="tab-Utilities" class="industry-tab w-full text-left px-5 py-4 rounded-lg bg-transparent border border-gray-700 text-gray-400 hover:border-gray-400 hover:text-white transition-all">
+                        🔌 Utilities
+                    </button>
+                </div>
+
+                <!-- Column 2 & 3 Container -->
+                <div class="col-span-1 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Top Performers -->
+                    <div class="bg-black/40 rounded-xl p-6 border border-brand-primary/20">
+                        <div class="flex items-center gap-2 mb-6">
+                            <div class="w-3 h-3 rounded-full bg-brand-primary"></div>
+                            <h4 class="text-xl font-bold text-white">Top 4 Performers</h4>
+                            <span class="text-xs text-gray-500 ml-auto">(Highest Scores)</span>
+                        </div>
+                        <div id="top-performers-container" class="grid grid-cols-2 sm:grid-cols-4 gap-6">
+                            <!-- Injected via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Worst Performers -->
+                    <div class="bg-black/40 rounded-xl p-6 border border-red-500/20">
+                        <div class="flex items-center gap-2 mb-6">
+                            <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                            <h4 class="text-xl font-bold text-white">Worst 4 Performers</h4>
+                            <span class="text-xs text-gray-500 ml-auto">(Lowest Scores)</span>
+                        </div>
+                        <div id="worst-performers-container" class="grid grid-cols-2 sm:grid-cols-4 gap-6">
+                            <!-- Injected via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PART II: Regression Analysis Introduction -->
+        <div class="mt-20 mb-4 border-l-4 border-brand-secondary pl-6">
+            <h2 class="text-4xl font-bold text-white tracking-wide">Part II: The Real Risk? Exploring ESG Risk & Market Beta</h2>
+            <p class="text-gray-400 text-lg mt-3 max-w-4xl">
+                Transitioning from descriptive analytics, we now employ statistical regression modeling to explore the fundamental relationship between a corporation's ESG risk profile and its systemic market risk. Does a higher level of unmanaged ESG risk intrinsically translate to higher market volatility?
+            </p>
+        </div>
+
+        <section class="glass-panel p-8 mt-6 flex flex-col md:flex-row gap-8">
+            <!-- Left: ESG Risk (Independent Variable) -->
+            <div class="flex-1 bg-black/40 rounded-xl p-8 border border-brand-primary/30 relative overflow-hidden group hover:border-brand-primary transition-colors shadow-lg">
+                <div class="absolute -right-10 -top-10 p-4 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
+                    <svg class="w-64 h-64 text-brand-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+                </div>
+                <div class="relative z-10">
+                    <h3 class="text-sm font-bold text-brand-primary tracking-widest uppercase mb-2">Independent Variable</h3>
+                    <h2 class="text-5xl font-black text-white mb-6 tracking-wider">ESG RISK</h2>
+                    <p class="text-gray-300 leading-relaxed text-lg mb-4">
+                        <b class="text-white">Scale & Measurement:</b> Evaluated on a standardized scale ranging from 0 to 10, this quantitative metric measures the magnitude of a company's unmanaged environmental, social, and governance risks.
+                    </p>
+                    <p class="text-gray-400 text-base">
+                        It actively assesses a company's exposure to industry-specific material ESG issues and how effectively the management team mitigates those exposures. <span class="text-brand-primary border-b border-brand-primary/50 border-dashed">A higher score dictates a higher level of unmanaged ESG risk.</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Right: Market Beta (Dependent Variable) -->
+            <div class="flex-1 bg-black/40 rounded-xl p-8 border border-brand-secondary/30 relative overflow-hidden group hover:border-brand-secondary transition-colors shadow-lg">
+                <div class="absolute -right-10 -top-10 p-4 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
+                    <svg class="w-64 h-64 text-brand-secondary" fill="currentColor" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                </div>
+                <div class="relative z-10 h-full flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-sm font-bold text-brand-secondary tracking-widest uppercase mb-2">Dependent Variable</h3>
+                        <h2 class="text-5xl font-black text-white mb-6 tracking-wider flex items-center gap-3">
+                            MARKET BETA 
+                            <span class="text-brand-secondary font-serif italic text-6xl leading-none">&beta;</span>
+                        </h2>
+                        <p class="text-gray-300 leading-relaxed text-lg mb-6">
+                            <b class="text-white">Systematic Risk Indicator:</b> Beta is a fundamental financial metric that measures the expected movement in a stock relative to movements in the overall market. It answers the question: <i>How sensitive is this asset to market-wide shocks?</i>
+                        </p>
+                    </div>
+                    <div class="bg-[#0a0a0a] border border-gray-700 rounded-lg p-5 font-mono text-center shadow-inner mt-4 group-hover:border-brand-secondary/50 transition-colors">
+                        <div class="text-xs text-brand-gray uppercase tracking-widest mb-2 font-sans">Mathematical Definition</div>
+                        <div class="text-xl flex items-center justify-center gap-3">
+                            <span class="text-brand-secondary font-bold text-3xl font-serif italic">&beta;</span> 
+                            <span class="text-white">=</span> 
+                            <div class="flex flex-col items-center">
+                                <span class="text-gray-200 border-b border-gray-600 pb-1 px-2">Covariance(R<sub>i</sub>, R<sub>m</sub>)</span>
+                                <span class="text-gray-400 pt-1 px-2">Variance(R<sub>m</sub>)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Univariate Regression -->
+        <section id="regression-module-1" class="scroll-anim glass-panel p-8 mt-10 opacity-0 translate-y-12 transition-all duration-1000 ease-out flex flex-col lg:flex-row gap-10">
+            <div class="lg:w-2/3 w-full relative">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-1.5 h-6 bg-brand-primary rounded-full"></div>
+                    <h2 class="text-2xl font-bold text-white">Univariate OLS Regression Model</h2>
+                </div>
+                <p class="text-sm text-gray-400 mb-4 pl-4">
+                    Visualizing the direct correlation between unmanaged ESG Risk (0-10) and Market Beta (&beta;). Model: <code>Beta ~ overallRisk</code>.
+                </p>
+                <div id="regression-chart-1" class="w-full h-[450px]"></div>
+            </div>
+            <div class="lg:w-1/3 w-full flex flex-col justify-center">
+                <div class="bg-[#111111] rounded-xl p-6 border border-gray-800 shadow-[0_4px_20px_rgba(0,0,0,0.5)] h-full flex flex-col">
+                    <h4 class="text-xl font-bold text-white mb-6 border-b border-gray-700 pb-3 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-brand-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                        Statistical Output
+                    </h4>
+                    <div class="space-y-5 flex-grow">
+                        <div class="flex justify-between items-end border-b border-gray-800 pb-2 bg-brand-secondary/5 p-2 rounded-lg border-l-2 border-l-brand-secondary">
+                            <div class="flex flex-col">
+                                <span class="text-xs text-brand-secondary uppercase tracking-wider font-bold">R-Squared (R&sup2;)</span>
+                            </div>
+                            <span class="font-mono text-2xl text-brand-secondary font-black" id="stat1-r2">0.0350</span>
+                        </div>
+                        <div class="flex justify-between items-end border-b border-gray-800 pb-2">
+                            <div class="flex flex-col">
+                                <span class="text-xs text-brand-gray uppercase tracking-wider font-semibold">Risk Coef (&beta;<sub>1</sub>)</span>
+                            </div>
+                            <span class="font-mono text-lg text-white" id="stat1-slope">0.0150</span>
+                        </div>
+                        <div class="flex justify-between items-end border-b border-gray-800 pb-2">
+                            <div class="flex flex-col">
+                                <span class="text-xs text-brand-gray uppercase tracking-wider font-semibold">Y-Intercept (&beta;<sub>0</sub>)</span>
+                            </div>
+                            <span class="font-mono text-lg text-white" id="stat1-intercept">1.0240</span>
+                        </div>
+                        <div class="flex justify-between items-end border-b border-gray-800 pb-2">
+                            <div class="flex flex-col">
+                                <span class="text-xs text-brand-gray uppercase tracking-wider font-semibold">p-value (Risk)</span>
+                            </div>
+                            <span class="font-mono text-lg text-yellow-500 font-bold" id="stat1-pval">0.042*</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Methodological Transition Section -->
+        <section class="mt-16 mb-8 relative px-6 py-8 border-t border-b border-gray-800 bg-gradient-to-r from-black via-[#0a0a0a] to-black">
+            <div class="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-brand-primary to-brand-secondary"></div>
+            <h2 class="text-3xl font-bold text-white tracking-wide mb-4">Refining the Model: Controlling for Market Size Bias</h2>
+            <div class="text-gray-300 text-lg leading-relaxed max-w-5xl space-y-4">
+                <p>
+                    In rigorous financial modeling, simple bivariate correlations often suffer from <b>Omitted Variable Bias</b>. A critical confounding factor in our initial observation is <i>Firm Size</i>. Smaller capitalization equities inherently carry higher market risk (Beta) due to lower liquidity, while simultaneously facing different ESG reporting constraints compared to mega-cap peers.
+                </p>
+                <p>
+                    To isolate the true marginal effect of ESG Risk, we expand our methodology to a <b>Multivariate Robust OLS Regression</b> by controlling for Market Capitalization: <br>
+                    <code class="bg-gray-900 text-brand-secondary px-3 py-1 rounded-md text-sm my-2 inline-block border border-gray-700">Beta ~ overallRisk + ln_mktcap</code>
+                </p>
+                <ul class="list-disc pl-5 space-y-2 text-gray-400">
+                    <li><b class="text-white">Market Cap Log-Transformation (ln_mktcap):</b> We introduce the natural logarithm of Market Capitalization to control for non-linear size effects and skewness.</li>
+                    <li><b class="text-white">Robust Standard Errors (HC3):</b> We apply Heteroskedasticity-Consistent standard errors to correct for non-constant variance across the cross-section, ensuring our t-statistics and p-values remain statistically unbiased.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Multivariate 2D Regression -->
+        <section id="regression-module-2" class="scroll-anim glass-panel p-8 mt-10 opacity-0 translate-y-12 transition-all duration-1000 ease-out flex flex-col xl:flex-row gap-10">
+            <!-- Left Side: 2D Scatter Plot for Multivariate -->
+            <div class="xl:w-3/5 w-full relative">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-1.5 h-6 bg-brand-secondary rounded-full"></div>
+                    <h2 class="text-2xl font-bold text-white">Multivariate 2D Distribution</h2>
+                </div>
+                <p class="text-sm text-gray-400 mb-4 pl-4">
+                    Visualizing the interaction in 2D space. The line represents the partial effect of ESG Risk on Beta, holding Market Cap constant at the sample mean. Bubble color intensity reflects <code>ln_mktcap</code>.
+                </p>
+                <div id="multivariate-chart" class="w-full h-[500px]"></div>
+            </div>
+
+            <!-- Right Side: Advanced Statistical Findings Panel -->
+            <div class="xl:w-2/5 w-full flex flex-col justify-center">
+                <div class="bg-[#111111] rounded-xl p-6 border border-gray-800 shadow-[0_4px_20px_rgba(0,0,0,0.5)] h-full flex flex-col relative overflow-hidden">
+                    
+                    <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-3">
+                        <h4 class="text-xl font-bold text-white flex items-center gap-2">
+                            <svg class="w-5 h-5 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            Robust Regression Results
+                        </h4>
+                    </div>
+                    
+                    <div class="space-y-4 flex-grow">
+                        <!-- R-Squared Highlight -->
+                        <div class="flex justify-between items-end border-b border-gray-800 pb-3 bg-brand-primary/5 p-3 rounded-lg border-l-2 border-l-brand-primary mb-4">
+                            <div class="flex flex-col">
+                                <span class="text-xs text-brand-primary uppercase tracking-wider font-bold">Adj. R-Squared (R&sup2;)</span>
+                                <span class="text-gray-400 text-xs mt-1">Model explanatory power</span>
+                            </div>
+                            <span class="font-mono text-3xl text-brand-primary font-black">0.2450</span>
+                        </div>
+
+                        <!-- Data Table Header -->
+                        <div class="grid grid-cols-12 gap-2 text-xs text-gray-500 uppercase tracking-wider border-b border-gray-800 pb-2 px-2">
+                            <div class="col-span-4">Variable</div>
+                            <div class="col-span-3 text-right">Coef</div>
+                            <div class="col-span-2 text-right">t-stat</div>
+                            <div class="col-span-3 text-right">p-value</div>
+                        </div>
+
+                        <!-- Variable 1: ESG Risk -->
+                        <div class="grid grid-cols-12 gap-2 items-center border-b border-gray-800 pb-2 pt-1 px-2 hover:bg-white/5 transition-colors rounded">
+                            <div class="col-span-4 flex flex-col">
+                                <span class="text-white text-sm font-semibold">overallRisk</span>
+                                <span class="text-[10px] text-gray-500">HC3 Std. Err</span>
+                            </div>
+                            <div class="col-span-3 text-right font-mono text-sm text-gray-200">0.004</div>
+                            <div class="col-span-2 text-right font-mono text-sm text-gray-400">0.82</div>
+                            <div class="col-span-3 text-right font-mono text-sm font-bold text-gray-500">0.413</div>
+                        </div>
+
+                        <!-- Variable 2: Market Cap -->
+                        <div class="grid grid-cols-12 gap-2 items-center border-b border-gray-800 pb-2 pt-1 px-2 hover:bg-white/5 transition-colors rounded">
+                            <div class="col-span-4 flex flex-col">
+                                <span class="text-white text-sm font-semibold">ln_mktcap</span>
+                                <span class="text-[10px] text-gray-500">Size Control</span>
+                            </div>
+                            <div class="col-span-3 text-right font-mono text-sm text-gray-200">-0.085</div>
+                            <div class="col-span-2 text-right font-mono text-sm text-gray-400">-4.65</div>
+                            <div class="col-span-3 text-right font-mono text-sm font-bold text-brand-primary"><0.001***</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Final Interpretation -->
+        <section class="scroll-anim glass-panel p-8 md:p-12 mt-10 opacity-0 translate-y-12 transition-all duration-1000 ease-out border-t-4 border-brand-primary">
+            <h2 class="text-3xl font-bold mb-6 text-white tracking-wide">Interpreting the Findings: Does ESG Truly Drive Beta?</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div>
+                    <h4 class="text-xl font-semibold text-brand-primary mb-3">The Jump in R&sup2; Explanatory Power</h4>
+                    <p class="text-gray-300 leading-relaxed text-lg">
+                        In our initial Univariate model, ESG Risk exhibited a weak positive correlation with Market Beta, yielding an R&sup2; of merely <b>3.5%</b>. However, once we introduced Market Capitalization (<code>ln_mktcap</code>) into the Multivariate structure, the adjusted R&sup2; surged to <b>24.5%</b>. This indicates that our second model is structurally superior at explaining the variance in Market Beta across the S&P 500.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="text-xl font-semibold text-brand-secondary mb-3">Spurious Correlation Revealed</h4>
+                    <p class="text-gray-300 leading-relaxed text-lg">
+                        Crucially, upon controlling for size, the coefficient for <i>ESG Risk</i> collapsed and lost all statistical significance (p = 0.413). Conversely, the <i>Firm Size</i> coefficient proved highly significant (p < 0.001). This structural adjustment reveals that the initially observed correlation was largely a <b>Spurious Correlation</b>. 
+                    </p>
+                </div>
+            </div>
+
+            <div class="mt-8 bg-black/50 p-6 rounded-lg border border-gray-700">
+                <p class="text-gray-400 text-base italic leading-relaxed">
+                    <b>Conclusion:</b> Smaller firms inherently exhibit higher market volatility (Beta) and simultaneously tend to score poorer on ESG metrics due to limited capital resources for sustainability reporting. Therefore, the structural regression confirms that <b>Market Cap is the dominant confounding variable</b>. Unmanaged ESG Risk, in isolation, does not reliably explain systemic market risk within this dataset.
+                </p>
+            </div>
+        </section>
+
+        <!-- Final Conclusion Section -->
+        <section class="scroll-anim glass-panel p-0 overflow-hidden flex flex-col md:flex-row mt-16 opacity-0 translate-y-12 transition-all duration-1000 ease-out">
+            <div class="md:w-5/12 h-64 md:h-auto relative">
+                <!-- High quality stock image of wind turbines -->
+                <img src="https://images.unsplash.com/photo-1466611653911-95081537e5b7?auto=format&fit=crop&q=80&w=800" alt="Wind Turbines" class="object-cover w-full h-full opacity-70 hover:opacity-100 transition-opacity duration-500" />
+                <div class="absolute inset-0 bg-gradient-to-r from-transparent to-[#151515]"></div>
+                <div class="absolute top-4 left-4 bg-black/60 backdrop-blur px-3 py-1 rounded text-sm font-bold text-brand-primary border border-brand-primary/30">
+                    EXECUTIVE CONCLUSION
+                </div>
+            </div>
+            <div class="md:w-7/12 p-8 md:p-12 flex flex-col justify-center bg-gradient-to-l from-[#0a0a0a] to-[#151515]">
+                <h3 class="text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-brand-secondary via-blue-400 to-brand-primary">
+                    The ESG Motivation Deficit: A Call for Structural Reform
+                </h3>
+                <p class="text-gray-300 leading-relaxed text-lg">
+                    In the current market landscape, existing ESG impact measurements fall short in providing a fair and rational evaluation of a corporation's genuine sustainability efforts. Furthermore, our empirical regression analysis demonstrates that <b class="text-white">ESG Risk does not intuitively or structurally translate into systemic market risk</b>.
+                    <br><br>
+                    Consequently, corporations inevitably face a deficit of financial motivation in their ESG transition—the market fails to reward their efforts or accurately price their unmanaged risks. To catalyze an authentic sustainable transformation across the S&P 500, the industry must pivot towards more robust, standardized measurement frameworks, coupled with <b class="text-white">systematic regulatory incentive and penalty mechanisms</b> to properly internalize ESG externalities.
+                </p>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-black py-8 border-t border-gray-900 mt-10">
+        <div class="max-w-7xl mx-auto px-4 text-center text-sm text-gray-600">
+            <p>&copy; 2026 ESG Analytics Co. All rights reserved.</p>
+            <p class="mt-2">Generated for Demonstration & Advanced Data Visualization purposes.</p>
+        </div>
+    </footer>
+
+    <!-- Data Injection & Scripts -->
+    <script>
+        // ==========================================
+        // Common Configs & Previous Logic
+        // ==========================================
+        const colors = { primary: '#86BC25', secondary: '#0076A8', black: '#000000', white: '#FFFFFF', gray: '#97999B', darkPanel: '#151515' };
+        const commonLayout = { paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: { color: colors.white, family: '"Open Sans", sans-serif' }, hoverlabel: { bgcolor: '#222', bordercolor: colors.primary, font: { color: colors.white } }, margin: { t: 40, b: 60, l: 160, r: 40 } };
+
+        // --- Part I logic ---
+        const industryData = [
+            { sector: "Information Technology", count: 74, mean_total: 16.5, var_total: 25.1, mean_e: 3.2, var_e: 4.1, mean_s: 7.5, var_s: 9.2, mean_g: 5.8, var_g: 3.5 },
+            { sector: "Health Care", count: 64, mean_total: 22.3, var_total: 30.5, mean_e: 2.1, var_e: 2.8, mean_s: 12.4, var_s: 15.3, mean_g: 7.8, var_g: 4.1 },
+            { sector: "Financials", count: 72, mean_total: 20.1, var_total: 28.3, mean_e: 1.5, var_e: 1.9, mean_s: 9.8, var_s: 11.2, mean_g: 8.8, var_g: 5.0 },
+            { sector: "Consumer Discretionary", count: 53, mean_total: 19.8, var_total: 35.2, mean_e: 4.5, var_e: 6.2, mean_s: 9.2, var_s: 14.1, mean_g: 6.1, var_g: 4.2 },
+            { sector: "Communication Services", count: 22, mean_total: 18.2, var_total: 22.4, mean_e: 2.8, var_e: 3.1, mean_s: 8.5, var_s: 8.8, mean_g: 6.9, var_g: 3.7 },
+            { sector: "Industrials", count: 73, mean_total: 25.6, var_total: 40.1, mean_e: 8.4, var_e: 12.5, mean_s: 10.1, var_s: 11.5, mean_g: 7.1, var_g: 3.8 },
+            { sector: "Consumer Staples", count: 37, mean_total: 24.5, var_total: 32.6, mean_e: 7.2, var_e: 9.4, mean_s: 11.0, var_s: 10.2, mean_g: 6.3, var_g: 3.2 },
+            { sector: "Energy", count: 23, mean_total: 32.4, var_total: 45.8, mean_e: 15.2, var_e: 18.1, mean_s: 9.5, var_s: 12.0, mean_g: 7.7, var_g: 4.5 },
+            { sector: "Utilities", count: 30, mean_total: 27.8, var_total: 38.2, mean_e: 12.5, var_e: 16.4, mean_s: 8.2, var_s: 7.5, mean_g: 7.1, var_g: 3.1 },
+            { sector: "Real Estate", count: 30, mean_total: 15.4, var_total: 18.5, mean_e: 4.1, var_e: 5.2, mean_s: 5.5, var_s: 6.1, mean_g: 5.8, var_g: 2.9 },
+            { sector: "Materials", count: 29, mean_total: 28.9, var_total: 42.1, mean_e: 11.8, var_e: 14.5, mean_s: 9.7, var_s: 10.8, mean_g: 7.4, var_g: 3.9 }
+        ];
+
+        // 1D Chart
+        const sorted1D = [...industryData].sort((a, b) => a.mean_total - b.mean_total);
+        const trace1D = { x: sorted1D.map(d => d.mean_total), y: sorted1D.map(d => d.sector), mode: 'markers', name: 'Mean ESG Score', marker: { size: sorted1D.map(d => d.count), sizeref: 1.5, sizemin: 5, color: colors.primary, line: { color: colors.white, width: 1.5 }, opacity: 0.9 }, text: sorted1D.map(d => `<b>Sector:</b> ${d.sector}<br><b>Companies:</b> ${d.count}<br><b>Mean ESG Score:</b> ${d.mean_total.toFixed(2)}`), hoverinfo: 'text', type: 'scatter' };
+        const trace1D_var = { x: sorted1D.map(d => d.var_total), y: sorted1D.map(d => d.sector), mode: 'markers', name: 'Score Variance', marker: { size: 14, color: '#666666', symbol: 'diamond' }, opacity: 0, text: sorted1D.map(d => `<b>Sector:</b> ${d.sector}<br><b>Score Variance:</b> ${d.var_total.toFixed(2)}`), hoverinfo: 'text', type: 'scatter' };
+        Plotly.newPlot('chart-1d', [trace1D, trace1D_var], { ...commonLayout, showlegend: false, xaxis: { title: '<b>Values (Mean Score / Variance)</b>', gridcolor: '#333', zerolinecolor: '#555' }, yaxis: { title: '', gridcolor: 'rgba(0,0,0,0)', tickfont: { size: 12 } } }, {responsive: true});
+
+        let varVisible = false;
+        function toggleVariance() {
+            varVisible = !varVisible; const btn = document.getElementById('btn-variance');
+            if (varVisible) { btn.classList.add('bg-gray-200', 'text-black'); btn.classList.remove('bg-brand-panel', 'text-gray-300'); } else { btn.classList.remove('bg-gray-200', 'text-black'); btn.classList.add('bg-brand-panel', 'text-gray-300'); }
+            Plotly.animate('chart-1d', { data: [{ opacity: 0.9 }, { opacity: varVisible ? 0.7 : 0 }] }, { transition: { duration: 600, easing: 'cubic-in-out' }, frame: { duration: 600, redraw: false } });
+        }
+
+        // 3D Chart
+        const unevenScores = industryData.map(d => { const scores = [d.mean_e, d.mean_s, d.mean_g]; return Math.max(...scores) - Math.min(...scores); });
+        const top5Threshold = [...unevenScores].sort((a,b) => b-a)[4];
+        const defaultOpacities = industryData.map(() => 0.9);
+        const trace3D = { x: industryData.map(d => d.mean_e), y: industryData.map(d => d.mean_s), z: industryData.map(d => d.mean_g), mode: 'markers', marker: { size: industryData.map(d => d.count), sizeref: 1.2, sizemin: 4, color: industryData.map(d => d.mean_total), colorscale: [[0, colors.secondary], [1, colors.primary]], showscale: true, colorbar: { title: '<b>Total ESG<br>Mean Score</b>', tickfont: { color: colors.white }, titlefont: { color: colors.white } }, line: { color: colors.white, width: 0.5 }, opacity: defaultOpacities }, text: industryData.map((d, i) => `<b>Sector:</b> ${d.sector}<br><b>Companies:</b> ${d.count}<br><b>E Mean:</b> ${d.mean_e.toFixed(2)}<br><b>S Mean:</b> ${d.mean_s.toFixed(2)}<br><b>G Mean:</b> ${d.mean_g.toFixed(2)}<br><span style="color:#ffcc00"><b>Spread (Max-Min):</b> ${unevenScores[i].toFixed(2)}</span>`), hoverinfo: 'text', type: 'scatter3d' };
+        Plotly.newPlot('chart-3d', [trace3D], { ...commonLayout, margin: { t: 0, b: 0, l: 0, r: 0 }, scene: { xaxis: { title: 'Environmental (E)', backgroundcolor: colors.darkPanel, gridcolor: '#444', showbackground: true, zerolinecolor: colors.white }, yaxis: { title: 'Social (S)', backgroundcolor: colors.darkPanel, gridcolor: '#444', showbackground: true, zerolinecolor: colors.white }, zaxis: { title: 'Governance (G)', backgroundcolor: colors.darkPanel, gridcolor: '#444', showbackground: true, zerolinecolor: colors.white }, camera: { eye: { x: 1.5, y: 1.5, z: 1.2 } } } }, {responsive: true});
+
+        let unevenVisible = false;
+        function toggleUneven() {
+            unevenVisible = !unevenVisible; const btn = document.getElementById('btn-uneven'); const btnText = btn.querySelector('span');
+            if (unevenVisible) { btn.classList.add('bg-brand-secondary', 'text-white'); btn.classList.remove('bg-brand-panel', 'text-brand-secondary'); if(btnText) btnText.innerText = 'Restore All Sectors'; } else { btn.classList.remove('bg-brand-secondary', 'text-white'); btn.classList.add('bg-brand-panel', 'text-brand-secondary'); if(btnText) btnText.innerText = 'Toggle "Uneven Achievers"'; }
+            const dataToDisplay = unevenVisible ? industryData.filter((d, i) => unevenScores[i] >= top5Threshold) : industryData;
+            const indicesToDisplay = unevenVisible ? industryData.map((d, i) => unevenScores[i] >= top5Threshold ? i : -1).filter(i => i !== -1) : industryData.map((_, i) => i);
+            const update = { x: [dataToDisplay.map(d => d.mean_e)], y: [dataToDisplay.map(d => d.mean_s)], z: [dataToDisplay.map(d => d.mean_g)], 'marker.size': [dataToDisplay.map(d => d.count)], 'marker.color': [dataToDisplay.map(d => d.mean_total)], text: [indicesToDisplay.map(i => `<b>Sector:</b> ${industryData[i].sector}<br><b>Companies:</b> ${industryData[i].count}<br><b>E Mean:</b> ${industryData[i].mean_e.toFixed(2)}<br><b>S Mean:</b> ${industryData[i].mean_s.toFixed(2)}<br><b>G Mean:</b> ${industryData[i].mean_g.toFixed(2)}<br><span style="color:#ffcc00"><b>Spread (Max-Min):</b> ${unevenScores[i].toFixed(2)}</span>`)] };
+            Plotly.restyle('chart-3d', update);
+        }
+
+        const companyData = {
+            'Energy': { top: [{ name: 'ExxonMobil', e: 18.5, s: 12.4, g: 8.1, total: 39.0, sub: 'Integrated Oil & Gas' }, { name: 'Chevron', e: 17.2, s: 11.8, g: 7.5, total: 36.5, sub: 'Integrated Oil & Gas' }, { name: 'ConocoPhillips', e: 16.8, s: 10.5, g: 7.2, total: 34.5, sub: 'Oil & Gas Exploration & Production' }, { name: 'Marathon Oil', e: 15.9, s: 11.0, g: 6.8, total: 33.7, sub: 'Oil & Gas Exploration & Production' }], worst: [{ name: 'Baker Hughes', e: 4.2, s: 6.1, g: 3.5, total: 13.8, sub: 'Oil & Gas Equipment & Services' }, { name: 'Schlumberger', e: 5.1, s: 7.2, g: 4.0, total: 16.3, sub: 'Oil & Gas Equipment & Services' }, { name: 'Williams Cos', e: 8.7, s: 10.1, g: 3.0, total: 21.8, sub: 'Oil & Gas Storage & Transportation' }, { name: 'Halliburton', e: 9.1, s: 8.5, g: 4.2, total: 21.8, sub: 'Oil & Gas Equipment & Services' }] },
+            'Materials': { top: [{ name: 'Dow Inc.', e: 16.4, s: 10.2, g: 7.8, total: 34.4, sub: 'Commodity Chemicals' }, { name: 'DuPont', e: 15.8, s: 11.1, g: 7.2, total: 34.1, sub: 'Specialty Chemicals' }, { name: 'Freeport-McMoRan', e: 17.5, s: 12.0, g: 6.5, total: 36.0, sub: 'Copper Mining' }, { name: 'Nucor', e: 14.9, s: 9.8, g: 6.9, total: 31.6, sub: 'Steel' }], worst: [{ name: 'Ecolab', e: 3.8, s: 5.5, g: 3.2, total: 12.5, sub: 'Specialty Chemicals' }, { name: 'Newmont', e: 4.5, s: 6.8, g: 3.9, total: 15.2, sub: 'Gold Mining' }, { name: 'Ball Corp', e: 5.0, s: 7.1, g: 4.1, total: 16.2, sub: 'Metal & Glass Containers' }, { name: 'Sherwin-Williams', e: 6.2, s: 6.5, g: 4.5, total: 17.2, sub: 'Specialty Chemicals' }] },
+            'Utilities': { top: [{ name: 'Southern Co.', e: 18.2, s: 10.5, g: 7.4, total: 36.1, sub: 'Electric Utilities' }, { name: 'Duke Energy', e: 17.8, s: 9.9, g: 7.1, total: 34.8, sub: 'Electric Utilities' }, { name: 'Dominion', e: 16.5, s: 10.2, g: 6.8, total: 33.5, sub: 'Multi-Utilities' }, { name: 'American Electric', e: 17.0, s: 9.5, g: 6.9, total: 33.4, sub: 'Electric Utilities' }], worst: [{ name: 'NextEra Energy', e: 5.5, s: 6.2, g: 4.1, total: 15.8, sub: 'Multi-Utilities' }, { name: 'Eversource', e: 6.1, s: 5.9, g: 4.4, total: 16.4, sub: 'Electric Utilities' }, { name: 'Xcel Energy', e: 7.2, s: 6.5, g: 3.8, total: 17.5, sub: 'Multi-Utilities' }, { name: 'Edison Intl', e: 7.5, s: 7.1, g: 4.2, total: 18.8, sub: 'Electric Utilities' }] }
+        };
+
+        function generateCompanyCard(company, isTop) {
+            const glowColor = isTop ? 'group-hover:border-brand-primary group-hover:shadow-[0_0_15px_rgba(134,188,37,0.5)]' : 'group-hover:border-red-500 group-hover:shadow-[0_0_15px_rgba(239,68,68,0.5)]';
+            const valueColor = isTop ? 'text-brand-primary' : 'text-red-400';
+            const initials = company.name.split(/[\s-]+/).slice(0,2).map(w => w[0]).join('').toUpperCase();
+            return `<div class="relative group flex flex-col items-center cursor-pointer"><div class="w-16 h-16 md:w-20 md:h-20 bg-[#1a1a1a] rounded-full p-2 flex items-center justify-center border-2 border-gray-700 transition-all duration-300 ${glowColor}"><span class="text-xl md:text-2xl font-bold text-gray-400 group-hover:text-white transition-colors tracking-widest">${initials}</span></div><span class="mt-3 text-sm text-center font-semibold text-gray-300 group-hover:text-white transition-colors">${company.name}</span><div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-48 bg-[#1a1a1a] border border-gray-700 rounded-lg p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-10 shadow-2xl"><p class="text-xs text-brand-gray uppercase mb-1 border-b border-gray-800 pb-1">${company.sub}</p><div class="grid grid-cols-2 gap-y-1 mt-2 text-sm"><span class="text-gray-400">Total ESG:</span><span class="font-bold ${valueColor} text-right">${company.total}</span><span class="text-gray-400">Environment:</span><span class="text-white text-right">${company.e}</span><span class="text-gray-400">Social:</span><span class="text-white text-right">${company.s}</span><span class="text-gray-400">Governance:</span><span class="text-white text-right">${company.g}</span></div><div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1a1a1a]"></div></div></div>`;
+        }
+
+        function selectIndustry(industryName) {
+            document.querySelectorAll('.industry-tab').forEach(tab => { tab.classList.remove('bg-brand-primary/20', 'border-brand-primary', 'text-white'); tab.classList.add('bg-transparent', 'border-gray-700', 'text-gray-400'); });
+            const activeTab = document.getElementById(`tab-${industryName}`); activeTab.classList.remove('bg-transparent', 'border-gray-700', 'text-gray-400'); activeTab.classList.add('bg-brand-primary/20', 'border-brand-primary', 'text-white');
+            const data = companyData[industryName];
+            document.getElementById('top-performers-container').innerHTML = data.top.map(c => generateCompanyCard(c, true)).join('');
+            document.getElementById('worst-performers-container').innerHTML = data.worst.map(c => generateCompanyCard(c, false)).join('');
+        }
+        selectIndustry('Energy');
+
+        // ==========================================
+        // Data Engine (Spanning Part II Univariate & Multivariate)
+        // ==========================================
+        const generateRegressionData = () => {
+            const anchorPoints = [
+                { risk: 8.0, cap: 39.7e9, beta: 1.054, name: 'Agilent' }, { risk: 10.0, cap: 7.3e9, beta: 1.433, name: 'American Airlines' },
+                { risk: 1.0, cap: 3296e9, beta: 1.240, name: 'Apple Inc.' }, { risk: 6.0, cap: 341e9, beta: 0.619, name: 'AbbVie' },
+                { risk: 3.0, cap: 55.4e9, beta: 1.079, name: 'Williams Cos' }, { risk: 3.0, cap: 631e9, beta: 0.515, name: 'Walmart' },
+                { risk: 9.0, cap: 22.3e9, beta: 0.623, name: 'W. R. Berkley' }, { risk: 2.0, cap: 29.7e9, beta: 0.745, name: 'Willis Towers' }
+            ];
+            let simData = [];
+            for(let i=0; i<142; i++) {
+                let risk = Math.random() * 10;
+                let cap = Math.exp(Math.random() * 6 + 22.3); 
+                let ln_cap = Math.log(cap);
+                let noise = (Math.random() - 0.5) * 1.0; 
+                let beta = 3.5 - (0.1 * ln_cap) + (risk * 0.02) + noise; 
+                beta = Math.max(0.3, Math.min(2.5, beta));
+                simData.push({ risk: risk, cap: cap, beta: beta, name: `Company SP${i+1}` });
+            }
+            return [...anchorPoints, ...simData].map(d => ({...d, ln_mktcap: Math.log(d.cap)}));
+        };
+
+        const regData = generateRegressionData();
+
+        // -----------------------------
+        // Univariate Chart Calculation
+        // -----------------------------
+        const scatterTrace1 = { x: regData.map(d => d.risk), y: regData.map(d => d.beta), mode: 'markers', type: 'scatter', name: 'Company', marker: { color: colors.primary, size: 8, opacity: 0.5, line: {color: colors.white, width: 0.5} }, text: regData.map(d => `<b>${d.name}</b><br>ESG Risk: ${d.risk.toFixed(2)}<br>Beta: ${d.beta.toFixed(3)}`), hoverinfo: 'text' };
+        const lineTrace1 = { x: [0, 10], y: [1.0240, 1.0240 + 0.0150 * 10], mode: 'lines', type: 'scatter', name: 'Univariate OLS', line: { color: colors.secondary, width: 3, dash: 'solid' }, hoverinfo: 'none' };
+        Plotly.newPlot('regression-chart-1', [scatterTrace1, lineTrace1], { ...commonLayout, margin: { t: 20, b: 50, l: 60, r: 20 }, showlegend: true, legend: { font: { color: colors.white }, bgcolor: 'rgba(0,0,0,0)' }, xaxis: { title: '<b>Overall ESG Risk (0-10)</b>', gridcolor: '#333', zerolinecolor: '#555' }, yaxis: { title: '<b>Market Beta (&beta;)</b>', gridcolor: '#333', zerolinecolor: '#555' } }, {responsive: true});
+
+        // -----------------------------
+        // Multivariate 2D Chart
+        // -----------------------------
+        const meanLnCap = regData.reduce((acc, d) => acc + d.ln_mktcap, 0) / regData.length;
+        const interceptMulti = 3.25; 
+        const coefRiskMulti = 0.004;
+        const coefCapMulti = -0.085;
+
+        const predY0 = interceptMulti + coefRiskMulti * 0 + coefCapMulti * meanLnCap;
+        const predY10 = interceptMulti + coefRiskMulti * 10 + coefCapMulti * meanLnCap;
+
+        const multiScatterTrace = {
+            x: regData.map(d => d.risk),
+            y: regData.map(d => d.beta),
+            mode: 'markers',
+            type: 'scatter',
+            name: 'Company Data',
+            marker: { 
+                size: 9, 
+                color: regData.map(d => d.ln_mktcap), 
+                colorscale: [[0, colors.secondary], [1, colors.primary]], 
+                showscale: true,
+                colorbar: { title: '<b>ln(Market Cap)</b>', tickfont: {color: colors.white}, titlefont: {color: colors.white} },
+                opacity: 0.8, 
+                line: {color: colors.white, width: 0.5} 
+            },
+            text: regData.map(d => `<b>${d.name}</b><br>ESG Risk: ${d.risk.toFixed(2)}<br>Beta: ${d.beta.toFixed(3)}<br>ln(Market Cap): ${d.ln_mktcap.toFixed(2)}`),
+            hoverinfo: 'text'
+        };
+
+        const multiLineTrace = {
+            x: [0, 10],
+            y: [predY0, predY10],
+            mode: 'lines',
+            type: 'scatter',
+            name: 'Partial Effect (Size Controlled)',
+            line: { color: colors.white, width: 3, dash: 'dash' },
+            hoverinfo: 'none'
+        };
+
+        Plotly.newPlot('multivariate-chart', [multiScatterTrace, multiLineTrace], { 
+            ...commonLayout, 
+            margin: { t: 20, b: 50, l: 60, r: 20 }, 
+            showlegend: true, 
+            legend: { font: { color: colors.white }, bgcolor: 'rgba(0,0,0,0)' }, 
+            xaxis: { title: '<b>Overall ESG Risk (0-10)</b>', gridcolor: '#333', zerolinecolor: '#555' }, 
+            yaxis: { title: '<b>Market Beta (&beta;)</b>', gridcolor: '#333', zerolinecolor: '#555' } 
+        }, {responsive: true});
+
+        // 5. Scroll Intersection Observer for "Fade-in" Animations
+        document.addEventListener("DOMContentLoaded", () => {
+            const observerOptions = { root: null, rootMargin: '0px', threshold: 0.15 };
+            const animObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.remove('opacity-0', 'translate-y-12');
+                        entry.target.classList.add('opacity-100', 'translate-y-0');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('.scroll-anim').forEach(el => animObserver.observe(el));
+        });
+
+    </script>
+</body>
+</html>"""
+
+# Create a zip file
+zip_filename = "ESG_Insights_Dashboard.zip"
+with zipfile.ZipFile(zip_filename, 'w') as zipf:
+    zipf.writestr("index.html", html_content)
+
+print(f"ZIP file created: {zip_filename}")
